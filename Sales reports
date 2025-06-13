@@ -1,0 +1,669 @@
+
+import React, { useState, useEffect } from 'react';
+
+// Main Sales Report component
+function SalesReport() {
+  const [salesData, setSalesData] = useState([]);
+  const [grandTotal, setGrandTotal] = useState('0.00');
+  const [formData, setFormData] = useState({
+    saleDate: new Date().toISOString().split('T')[0],
+    orderNo: '',
+    refNo: '',
+    partyName: '',
+    phoneNo: '',
+    txnType: 'Sale',
+    status: 'Paid',
+    paymentType: 'Cash',
+    items: [
+      {
+        name: '',
+        hsnSac: '',
+        quantity: 1,
+        price: 0,
+        amount: 0
+      }
+    ]
+  });
+  
+  // Set initial sample data
+  useEffect(() => {
+    // Sample data that mimics the HTML data
+    // const initialSalesData = [
+    //   {
+    //     date: '',
+    //     orderNo: '',
+    //     refNo: '',
+    //     partyName: '',
+    //     phoneNo: '',
+    //     txnType: '',
+    //     status: '',
+    //     totalAmount: '',
+    //     paymentType: '' ,
+    //     receivedAmount: '',
+    //     balanceAmount: '',
+    //     items: [
+    //       {
+    //         name: '',
+    //         hsnSac: '',
+    //         quantity: ,
+    //         price: '',
+    //         amount: ''
+    //       }
+    //     ],
+    //     totalQuantity: 
+    //   },
+    //   {
+    //     date: '',
+    //     orderNo: '',
+    //     refNo: '',
+    //     partyName: '',
+    //     phoneNo: '',
+    //     txnType: '',
+    //     status: '',
+    //     totalAmount: '',
+    //     paymentType: '',
+    //     receivedAmount: '',
+    //     balanceAmount: '',
+    //     items: [
+    //       {
+    //         name: '',
+    //         hsnSac: '',
+    //         quantity: 1,
+    //         price: '',
+    //         amount: ''
+    //       }
+    //     ],
+    //     totalQuantity: 
+    //   }
+    // ];
+
+
+    
+    // setSalesData(initialSalesData);
+    // updateGrandTotal(initialSalesData);
+  }, []);
+  
+  // Format date for display (YYYY-MM-DD to DD/MM/YYYY)
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    
+    return dateString;
+  };
+  
+  // Calculate grand total
+  const updateGrandTotal = (data) => {
+    const total = data.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0);
+    setGrandTotal(total.toFixed(2));
+  };
+  
+  // Handle form changes
+  const handleFormChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value
+    });
+  };
+  
+  // Handle item changes
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...formData.items];
+    newItems[index] = {
+      ...newItems[index],
+      [field]: value
+    };
+    
+    // Recalculate amount if quantity or price changed
+    if (field === 'quantity' || field === 'price') {
+      newItems[index].amount = (
+        parseFloat(newItems[index].quantity || 0) * 
+        parseFloat(newItems[index].price || 0)
+      ).toFixed(2);
+    }
+    
+    setFormData({
+      ...formData,
+      items: newItems
+    });
+  };
+  
+  // Add new item row
+  const addItemRow = () => {
+    setFormData({
+      ...formData,
+      items: [
+        ...formData.items,
+        {
+          name: '',
+          hsnSac: '',
+          quantity: 1,
+          price: 0,
+          amount: 0
+        }
+      ]
+    });
+  };
+  
+  // Remove item row
+  const removeItemRow = (index) => {
+    if (formData.items.length > 1) {
+      const newItems = [...formData.items];
+      newItems.splice(index, 1);
+      setFormData({
+        ...formData,
+        items: newItems
+      });
+    } else {
+      alert("You must have at least one item.");
+    }
+  };
+  
+  // Calculate form subtotal
+  const calculateSubtotal = () => {
+    return formData.items.reduce((total, item) => total + parseFloat(item.amount || 0), 0).toFixed(2);
+  };
+  
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      saleDate: new Date().toISOString().split('T')[0],
+      orderNo: '',
+      refNo: '',
+      partyName: '',
+      phoneNo: '',
+      txnType: 'Sale',
+      status: 'Paid',
+      paymentType: 'Cash',
+      items: [
+        {
+          name: '',
+          hsnSac: '',
+          quantity: 1,
+          price: 0,
+          amount: 0
+        }
+      ]
+    });
+  };
+  
+  // Add sale entry
+  const addSaleEntry = () => {
+    // Validate required fields
+    if (!formData.partyName) {
+      alert("Party Name is required!");
+      return;
+    }
+    
+    if (!formData.refNo) {
+      alert("Reference Number is required!");
+      return;
+    }
+    
+    // Check if at least one item has a name
+    if (!formData.items.some(item => item.name.trim() !== '')) {
+      alert("Please add at least one item with a name!");
+      return;
+    }
+    
+    // Format date for display
+    const formattedDate = formatDate(formData.saleDate);
+    
+    // Calculate total quantity
+    const totalQuantity = formData.items.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+    
+    // Calculate subtotal
+    const subtotal = calculateSubtotal();
+    
+    // Create new sale entry
+    const newSale = {
+      date: formattedDate,
+      orderNo: formData.orderNo,
+      refNo: formData.refNo,
+      partyName: formData.partyName,
+      phoneNo: formData.phoneNo,
+      txnType: formData.txnType,
+      status: formData.status,
+      totalAmount: subtotal,
+      paymentType: formData.paymentType,
+      receivedAmount: subtotal,
+      balanceAmount: '0.00',
+      items: formData.items.filter(item => item.name.trim() !== ''),
+      totalQuantity: totalQuantity
+    };
+    
+    // Add to sales data
+    const newSalesData = [newSale, ...salesData];
+    setSalesData(newSalesData);
+    
+    // Update grand total
+    updateGrandTotal(newSalesData);
+    
+    // Reset form
+    resetForm();
+    
+    alert("Sale entry added successfully!");
+  };
+  
+  // Remove sale entry
+  const removeSaleEntry = (index) => {
+    const newSalesData = [...salesData];
+    newSalesData.splice(index, 1);
+    setSalesData(newSalesData);
+    updateGrandTotal(newSalesData);
+  };
+  
+  // Generate PDF report
+  const generatePDF = () => {
+    // Create a printable version of the page
+    const printContents = document.getElementById('salesReportContainer').innerHTML;
+    const originalContents = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+      <html>
+        <head>
+          <title>Sales Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            .header { text-align: center; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color:rgb(250, 247, 247); }
+            .sale-section { margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; }
+            .subtotal { text-align: right; font-weight: bold; margin-top: 10px; }
+            .grand-total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Xyz</h1>
+            <p>Phone no.: 9041561884 Email: rkspare98@gmail.com</p>
+            <h2>Sale Report</h2>
+            <h3>Duration: Till ${new Date().toLocaleDateString('en-GB')}</h3>
+          </div>
+          ${printContents}
+          <div class="grand-total">
+            Grand Total: ₹ ${grandTotal}
+          </div>
+        </body>
+      </html>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContents;
+  };
+
+  return (
+    <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '24px', margin: '0 0 5px 0',color:'blue' }}>Xyz</h1>
+        <p style={{ margin: '0 0 10px 0' }}>Phone no.: 9041561884 Email: rkspare98@gmail.com</p>
+        <h2 style={{ fontSize: '20px', margin: '0 0 5px 0' }}>Sale Report</h2>
+      </div>
+      
+      <div style={{ marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '16px', margin: '0' }}>Duration: Till {new Date().toLocaleDateString('en-GB')}</h3>
+      </div>
+      
+      {/* Form Section */}
+      <div style={{ backgroundColor: 'gray', padding: '15px', borderRadius: '5px', marginBottom: '20px', border: '1px solidrgb(60, 42, 224)' }}>
+        <h3 style={{ marginTop: '0' }}>Add New Sale</h3>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date</label>
+            <input
+              type="date"
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.saleDate}
+              onChange={(e) => handleFormChange('saleDate', e.target.value)}
+            />
+          </div>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Order No.</label>
+            <input
+              type="text"
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.orderNo}
+              onChange={(e) => handleFormChange('orderNo', e.target.value)}
+            />
+          </div>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ref No.</label>
+            <input
+              type="text"
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.refNo}
+              onChange={(e) => handleFormChange('refNo', e.target.value)}
+            />
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Party Name</label>
+            <input
+              type="text"
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.partyName}
+              onChange={(e) => handleFormChange('partyName', e.target.value)}
+            />
+          </div>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Phone No</label>
+            <input
+              type="text"
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              placeholder="+91XXXXXXXXXX"
+              value={formData.phoneNo}
+              onChange={(e) => handleFormChange('phoneNo', e.target.value)}
+            />
+          </div>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Transaction Type</label>
+            <select
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.txnType}
+              onChange={(e) => handleFormChange('txnType', e.target.value)}
+            >
+              <option value="Sale">Sale</option>
+              <option value="Purchase">Purchase</option>
+              <option value="Return">Return</option>
+            </select>
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Status</label>
+            <select
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.status}
+              onChange={(e) => handleFormChange('status', e.target.value)}
+            >
+              <option value="Paid">Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Payment Type</label>
+            <select
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              value={formData.paymentType}
+              onChange={(e) => handleFormChange('paymentType', e.target.value)}
+            >
+              <option value="Cash">Cash</option>
+              <option value="Card">Card</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+        </div>
+        
+        <h4 style={{ marginTop: '15px', marginBottom: '10px' }}>Items</h4>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f2f2f2' }}>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>#</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Item Name</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>HSN/SAC</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Quantity</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Price/Unit</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Amount</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {formData.items.map((item, index) => (
+                <tr key={index}>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{index + 1}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <input
+                      type="text"
+                      style={{ width: '100%', padding: '5px', boxSizing: 'border-box' }}
+                      value={item.name}
+                      onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                    />
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <input
+                      type="text"
+                      style={{ width: '100%', padding: '5px', boxSizing: 'border-box' }}
+                      value={item.hsnSac}
+                      onChange={(e) => handleItemChange(index, 'hsnSac', e.target.value)}
+                    />
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <input
+                      type="number"
+                      style={{ width: '100%', padding: '5px', boxSizing: 'border-box' }}
+                      value={item.quantity}
+                      min="1"
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                    />
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <input
+                      type="number"
+                      style={{ width: '100%', padding: '5px', boxSizing: 'border-box' }}
+                      value={item.price}
+                      step="0.01"
+                      onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                    />
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <input
+                      type="number"
+                      style={{ width: '100%', padding: '5px', boxSizing: 'border-box' }}
+                      value={item.amount}
+                      step="0.01"
+                      readOnly
+                    />
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <button
+                      style={{
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        padding: '5px 10px',
+                        cursor: 'pointer',
+                        borderRadius: '4px'
+                      }}
+                      onClick={() => removeItemRow(index)}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <button
+          style={{
+            backgroundColor:'green',
+            color: 'white',
+            border: 'none',
+            padding: '8px 15px',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            marginTop: '10px'
+          }}
+          onClick={addItemRow}
+        >
+          Add Item
+        </button>
+        
+        <div style={{ textAlign: 'right', fontWeight: 'bold', marginTop: '10px' , color:'gray' }}>
+          Current Sub Total: ₹ {calculateSubtotal()}
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px' }}>
+          <button
+            style={{
+              backgroundColor: '#008CBA',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              cursor: 'pointer',
+              borderRadius: '4px'
+            }}
+            onClick={addSaleEntry}
+          >
+            Add Sale Entry
+          </button>
+          <button
+            style={{
+              backgroundColor: '#FF9800',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              cursor: 'pointer',
+              borderRadius: '4px'
+            }}
+            onClick={resetForm}
+          >
+            Reset Form
+          </button>
+        </div>
+      </div>
+      
+      {/* Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 0' }}>
+        <button
+          style={{
+            backgroundColor: 'darkgreen',
+            color: 'whitesmoke',
+            border: 'none',
+            padding: '10px 20px',
+            margin:'10px',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '16px'
+          }}
+          onClick={generatePDF}
+        >  Download PDF
+        </button>
+      </div>
+      
+      <div style={{ textAlign: 'center', margin: '20px 0' }}>
+        <h2 style={{ fontSize: '20px' }}>Sale</h2>
+      </div>
+      
+      {/* Sales Container */}
+
+      <div id="salesReportContainer">
+        {salesData.map((sale, index) => (
+          <div key={index} style={{ backgroundColor: 'white', padding: '15px', borderRadius: '5px', marginBottom: '20px', border: '2px solid darkblack' }}>
+            <div style={{ overflowX: 'auto', marginBottom: '15px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'whitesmoke' }}>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Date</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' , color:'black'}}>Order No.</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Ref No.</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Party Name</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Phone No</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Txn Type</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' , color:'black'}}>Status</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Total Amount</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' , color:'black'}}>Payment Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.date}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.orderNo}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.refNo}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.partyName}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.phoneNo}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.txnType}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.status}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>₹ {sale.totalAmount}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.paymentType}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'whitesmoke' }}>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>#</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Item Name</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>HSN/SAC</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Quantity</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Price/Unit</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', color:'black' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sale.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' , color:'black'}}>{idx + 1}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' , color:'black'}}>{item.name}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{item.hsnSac}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{item.quantity}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' , color:'black'}}>₹ {item.price}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>₹ {item.amount}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ backgroundColor: 'white', fontWeight: 'bold' }}>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }} colSpan="3">Total</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>{sale.totalQuantity}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}></td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', color:'black' }}>₹ {sale.totalAmount}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ textAlign: 'right', fontWeight: 'bold', marginTop: '10px', color:'black' }}>
+              Sub Total: ₹ {sale.totalAmount}
+            </div>
+            
+            <button
+              style={{
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                padding: '8px 15px',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                marginTop: '10px'
+              }}
+              onClick={() => removeSaleEntry(index)}
+            >
+              Remove Entry
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      <div style={{ 
+        textAlign: 'right', 
+        fontSize: '18px', 
+        fontWeight: 'bold', 
+        marginTop: '20px',
+        padding: '10px',
+        backgroundColor: 'darkblue',
+        borderRadius: '5px' 
+      }}>
+        Grand Total: ₹ {grandTotal}
+      </div>
+    </div>
+  );
+}
+
+export default SalesReport;
